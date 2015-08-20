@@ -11,6 +11,7 @@ var expressWinston = require('express-winston');
 
 //mine
 var config = require('./config/config');
+var logger = new winston.Logger(config.logger.winston);
 var controllers = require('./controllers');
 
 //init express app
@@ -34,9 +35,18 @@ app.get('/test', function(req, res) {
 //error handling
 app.use(expressWinston.errorLogger(config.logger.winston)); 
 app.use(function(err, req, res, next) {
+    logger.error(err);
+    logger.error(err.stack);
     res.status(err.status || 500);
     res.json({message: err.message, /*stack: err.stack*/}); //let's hide callstack for now
 });
+
+process.on('uncaughtException', function (err) {
+    //TODO report this to somewhere!
+    logger.error((new Date).toUTCString() + ' uncaughtException:', err.message)
+    logger.error(err.stack)
+    //process.exit(1); //some people think we should do this.. but I am not so sure..
+})
 
 exports.app = app;
 exports.start = function() {
@@ -46,5 +56,4 @@ exports.start = function() {
         console.log("ISDP request handler listening on %s:%d in %s mode", host, port, app.settings.env);
     });
 };
-
 

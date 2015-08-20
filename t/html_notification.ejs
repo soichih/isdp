@@ -12,20 +12,19 @@
     <table style="border-collapse: collapse;" width="100%">
     <% for(var taskid in status.tasks) { %>
     <tr>
-    <td style="align: top; border-bottom: 1px solid #ccc;" width="50">
-        <% if(status.tasks[taskid].status == 'finished') {%>
-            <img src="http://soichi7.ppa.iu.edu/public/cdn/check.png"/>
-        <% } else if(status.tasks[taskid].status == 'failed') { %>
-            <img src="http://soichi7.ppa.iu.edu/public/cdn/cross.png"/>
-        <% } else { %>
-            <b><%=status.tasks[taskid].status%></b>
-        <% } %>
-    </td>
-    <td style="border-bottom: 1px solid #ccc;">
+        <td style="align: top; border-bottom: 1px solid #ccc;" width="50">
+            <% if(status.tasks[taskid].status == 'finished') {%>
+                <img src="http://soichi7.ppa.iu.edu/public/cdn/check.png"/>
+            <% } else if(status.tasks[taskid].status == 'failed') { %>
+                <img src="http://soichi7.ppa.iu.edu/public/cdn/cross.png"/>
+            <% } else { %>
+                <b><%=status.tasks[taskid].status%></b>
+            <% } %>
+        </td>
+        <td style="border-bottom: 1px solid #ccc;">
             <p><%= status.tasks[taskid].name %></p>
             <p style="color: #999;"><%= status.tasks[taskid].msg %></p>
-        </div>
-    </td>
+        </td>
     </tr>
     <% } %>
     </table>

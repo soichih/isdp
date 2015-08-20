@@ -41,9 +41,12 @@ sudo pm2 startup redhat
 
 ## Monitoring
 
-stdout/stderr from ISDP can be monitored at ~/.pm2/logs
+pm2 stores stdout/stderr from ISDP to ~/.pm2/logs . you can monitor it by
+```
+pm2 logs isdp
+```
 
-You can check the status of ISDP server at /health endpoint
+You can check the status of ISDP server via /health endpoint
 ```
 curl http://localhost:12346/health
 ```
@@ -53,6 +56,7 @@ You can also check the runtime information from pm2
 ```
 pm2 show isdp
 ```
+
 
 ## TODOs
 
@@ -83,7 +87,7 @@ DONE
 9) what happens if amqp is down?
 I am not sure if it's pooling messages to be published locally, but as soon as amqp server comes back online, it reconnects seemslessly
 
-
 10) what happens if 2 request comes in simultaneously? I am afraid "var job = this;" on async.series on sca-datamover will point to 2nd jobs while processing the 1st job?
 I've created a test script and it seems to work as expected. both job eventually finished successfully and correctly
 
+> What happens if unzip, tar, etc.. commands doesn't exists in path?

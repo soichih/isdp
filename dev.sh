@@ -4,6 +4,8 @@
 #export HPSS_KEYTAB_PATH=/home/hayashis/test/gis/doqqs_kt.keytab
 
 #export DEBUG=isdp:*
-export PORT=22346 
+#export PORT=22346 
 
-nodemon isdp
+#nodemon isdp
+
+pm2 start isdp.js --watch --ignore-watch="\.log$"

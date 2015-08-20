@@ -19,6 +19,21 @@ exports.isdp = {
     notification_from: 'no-reply@iu.edu',
 }
 
+exports.hpss = {
+    //set to true if youare behind firewall (and hsi can't reach you directly)
+    behind_firewall: true,
+    
+    //env to pass to hsi commands
+    env: {
+        //must point to where the hsi binaries are
+        PATH: "/home/hayashis/bin", 
+        //usual HPSS env stuff.
+        HPSS_PRINCIPAL: "doqqs",
+        HPSS_AUTH_METHOD: "keytab",
+        HPSS_KEYTAB_PATH: "/home/hayashis/test/gis/doqqs_kt.keytab",
+    }
+}
+
 //configuration to report progress information (optional)
 exports.progress = {
     //you don't get error message if your user/pass etc. are in correct (it just keeps retrying silently..)
@@ -66,7 +81,6 @@ exports.logger = {
 exports.express = {
     //web server port
     port: 12346,
-    //host: 'localhost',  //limit access to localhost only
 
     //specify jwt config if you want to access control via jwt (applied to all routes.. for now)
     /*
