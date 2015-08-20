@@ -1,5 +1,49 @@
-# isdp
-ISDP multi-file download service
+# ISDP HSI download service
+
+## Installation
+
+```
+sudo yum install nodejs npm git
+```
+
+```
+git clone git@github.iu.edu:hayashis/isdp.git
+cd isdp
+npm install
+```
+
+## Configuring
+
+Copy ./config/config_sample.js to ./config/config.js 
+
+Edit ./config/config.js 
+
+See comments within the config file for more info, but if you aren't sure, feel free to contact me at hayashis@iu.edu
+
+## Running
+
+All production node apps should run under pm2. If you agree, install pm2
+
+```
+sudo npm install pm2 -g
+```
+
+Finally, start the ISDP service
+```
+pm2 start isdp.js
+```
+
+To auto-start pm2 (and isdp app) during the next reboot,
+```
+sudo pm2 startup redhat
+```
+(change redhat to whichever the flavor of linux your are running.. centos / redhat, amazon, ubuntu, gentoo, systemd or darwin) 
+
+## Monitoring
+
+### stdout/stderr from ISDP
+
+See ~/.pm2/logs 
 
 ## TODOs
 

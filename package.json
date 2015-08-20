@@ -2,7 +2,7 @@
   "name": "isdp",
   "version": "0.0.1",
   "description": "ISDP multi-file download service",
-  "main": "index.js",
+  "main": "isdp.js",
   "directories": {
     "test": "test"
   },
