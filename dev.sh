@@ -4,6 +4,6 @@ export HPSS_AUTH_METHOD=keytab
 export HPSS_KEYTAB_PATH=/home/hayashis/test/gis/doqqs_kt.keytab
 
 #export DEBUG=isdp:*
-#export PORT=12346 
+export PORT=22346 
 
-nodemon ./index.js 
+nodemon isdp

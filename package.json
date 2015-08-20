@@ -32,7 +32,8 @@
     "express-winston": "~0.3.1",
     "winston-logstash": "~0.2.11",
     "sca-datamover": "~0.0.1",
-    "hpss": "0.0.2"
+    "hpss": "0.0.2",
+    "numeral": "~1.5.3"
   },
   "devDependencies": {
     "chai": "~3.2.0"
