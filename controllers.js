@@ -4,7 +4,7 @@ var fs = require('fs');
 var spawn = require('child_process').spawn;
 
 //contrib
-var hsi = require('hpss').hsi;
+var hpss = require('hpss');
 var ejs = require('ejs');
 var Email = require('email').Email;
 var numeral = require('numeral');
@@ -32,6 +32,8 @@ var logger = new winston.Logger(config.logger.winston);
 
 //initialize sca datamover
 scadm.init({logger: logger, progress: config.progress});
+//initialize hpss wrapper
+hpss.init(config.hpss);
 
 //logger to use to store all requests
 var request_logger = new winston.Logger(config.logger.request);
@@ -54,7 +56,7 @@ exports.request = function(req, res) {
         job.task('Download '+file+ ' from hsi', function(task, cb) {
 
             //get the requested file from hsi
-            hsi.get(file, config.isdp.stagedir+'/'+job.id, function(err, msgs) {
+            hpss.hsi.get(file, config.isdp.stagedir+'/'+job.id, function(err, msgs) {
                 if(err) { 
                     var msg = "Failed to download "+file+" from sda. hsi return code: "+err.code;
                     if(msgs) msg += "\n"+msgs.join("\n"); //add details from hsi

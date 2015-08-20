@@ -41,8 +41,10 @@ app.use(function(err, req, res, next) {
 exports.app = app;
 exports.start = function() {
     var port = process.env.PORT || config.express.port || '8080';
-    app.listen(port);
-    console.log("ISDP request handler listening on port %d in %s mode", port, app.settings.env);
+    var host = process.env.HOST || config.express.host || 'localhost';
+    app.listen(port, host, function() {
+        console.log("ISDP request handler listening on %s:%d in %s mode", host, port, app.settings.env);
+    });
 };
 
 
