@@ -1,6 +1,7 @@
 
 //node
 var fs = require('fs');
+var spawn = require('child_process').spawn;
 
 //contrib
 var hsi = require('hpss').hsi;
@@ -13,18 +14,32 @@ var winston = require('winston');
 var config = require('./config/config');
 var scadm = require('sca-datamover');//.init(config.scadm);
 
+//ES6 polyfill
+if (!String.prototype.endsWith) {
+  String.prototype.endsWith = function(searchString, position) {
+      var subjectString = this.toString();
+      if (position === undefined || position > subjectString.length) {
+        position = subjectString.length;
+      }
+      position -= searchString.length;
+      var lastIndex = subjectString.indexOf(searchString, position);
+      return lastIndex !== -1 && lastIndex === position;
+  };
+}
+
 var app = require('./server').app;
 var logger = new winston.Logger(config.logger.winston);
-var request_logger = new winston.Logger(config.logger.request);
 
+//initialize sca datamover
 scadm.init({logger: logger, progress: config.progress});
 
+//logger to use to store all requests
+var request_logger = new winston.Logger(config.logger.request);
+
 exports.request = function(req, res) {
-    /*
-    logger.info("handling user request");
-    logger.info(req.body);
-    logger.error("test error");
-    */
+    //logger.info("handling user request");
+    //logger.info(req.body);
+    //logger.error("test error");
     request_logger.info({headers: req.headers, body: req.body});
 
     var job = new scadm.job({name: 'just another isdp job'});
@@ -34,26 +49,49 @@ exports.request = function(req, res) {
         fs.mkdir(config.isdp.stagedir+'/'+job.id, cb);
     });
 
-    //step 2 - for each files requested
+    //step 2a - for each files requested...
     req.body.files.forEach(function(file) {
         job.task('Download '+file+ ' from hsi', function(task, cb) {
-            //console.log("calling hsi.get");
-            hsi.get(file, config.isdp.stagedir+'/'+job.id, function(err, msgs) {
-                if(!err) return cb();//all good
-                //failed..
-                var msg = "Failed to download "+file+" from sda. hsi return code: "+err.code;
-                if(msgs) msg += "\n"+msgs.join("\n"); //add details from hsi
-                
-                //send error message to user
-                fs.appendFile(config.isdp.stagedir+'/'+job.id+'/isdp_errors.txt', msg+'\n');
 
-                //also deliver it upstream (so that it can be logged on the server side)
-                err.msg = msg;
-                cb(err, true); //true means to continue even with the error
+            //get the requested file from hsi
+            hsi.get(file, config.isdp.stagedir+'/'+job.id, function(err, msgs) {
+                if(err) { 
+                    var msg = "Failed to download "+file+" from sda. hsi return code: "+err.code;
+                    if(msgs) msg += "\n"+msgs.join("\n"); //add details from hsi
+                    
+                    //send error message to user
+                    fs.appendFile(config.isdp.stagedir+'/'+job.id+'/isdp_errors.txt', msg+'\n');
+
+                    //also deliver it upstream (so that it can be logged on the server side)
+                    err.msg = msg;
+                    cb(err, true); //true means to continue even with the error 
+                } else {
+                    cb();
+                }
             }, function(progress) {
                 job.progress(progress, job.id+'.'+task.id); //post hsi generated progress
             });
         });
+    });
+
+    //step 2b - for each files downloaded.. unzip
+    req.body.files.forEach(function(file) {
+        var name = file.substring(file.lastIndexOf("/")+1);
+        if(name.endsWith(".zip") && req.body.unzip) {
+            job.task('Unzipping '+name, function(task, cb) {
+                var dirname = name.substring(0, name.length-4);
+                var tar = spawn('unzip', [name, '-d', dirname], {cwd: config.isdp.stagedir+'/'+job.id});        
+                tar.stderr.pipe(process.stderr);
+                tar.on('close', function(code, signal) {
+                    if(code == 0) { 
+                        fs.unlink(config.isdp.stagedir+'/'+job.id+'/'+name,function(err) {
+                            cb(err, true); //let process continue if unlink fails
+                        });
+                    }
+                    else cb({code:code, signal:signal}, true); //let process continues
+                });
+            });
+        }
     });
 
     //step 3
@@ -74,7 +112,10 @@ exports.request = function(req, res) {
         scadm.tasks.zipfiles({
             path: job.id,
             dest: job.stagezip,
-            cwd: config.isdp.stagedir
+            cwd: config.isdp.stagedir,
+            on_progress: function(msg) {
+                job.progress({msg: msg}, job.id+'.'+task.id); 
+            }
         }, cb);
     });
 
@@ -87,16 +128,22 @@ exports.request = function(req, res) {
             cb);
     });
 
-    //step 5 (optional)
-    if(req.body.notification_email) {
-        job.task('Notify submitter', function(task, cb) {
+    //respond to the caller with job id
+    res.json({status: 'requested', id: job.id});
+
+    //finally, start the job
+    job.run(function() {
+        
+        //after it's done, send a notification 
+        if(req.body.notification_email) {
             var stats = fs.statSync(job.stagezip);
             var html_template = fs.readFileSync('./t/html_notification.ejs').toString();
             var text_template = fs.readFileSync('./t/text_notification.ejs').toString();
             var params = {
                 jobid: job.id,
                 download_url: config.isdp.publishurl+'/'+job.id+'.zip',
-                size: numeral(stats.size/(1024*1024)).format('0,0')
+                size: numeral(stats.size/(1024*1024)).format('0,0'),
+                status: job.status,
             }
 
             var email = new Email({ 
@@ -107,13 +154,8 @@ exports.request = function(req, res) {
                 altText: ejs.render(text_template, params),
                 bodyType: 'html'
             });
-            email.send(cb);
-        });
-    }
-
-    res.json({status: 'requested', jobid: job.id});
-
-    //finally, start the job
-    job.run();
+            email.send();
+        }
+    });
 }
 
