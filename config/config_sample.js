@@ -66,6 +66,7 @@ exports.logger = {
 exports.express = {
     //web server port
     port: 12346,
+    //host: 'localhost',  //limit access to localhost only
 
     //specify jwt config if you want to access control via jwt (applied to all routes.. for now)
     /*
