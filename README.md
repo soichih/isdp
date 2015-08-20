@@ -35,9 +35,10 @@ pm2 start isdp.js
 
 To auto-start pm2 (and isdp app) during the next reboot,
 ```
-sudo pm2 startup redhat
+sudo pm2 startup redhat 
 ```
-(change redhat to whichever the flavor of linux your are running.. centos / redhat, amazon, ubuntu, gentoo, systemd or darwin) 
+* Use "systemd" instead of redhat if you are installing on systemd enabled host.
+* If you don't want to run the app as root, specify the user ID you want to run pm2 under (like -u hayashis)
 
 ## Monitoring
 
