@@ -41,9 +41,18 @@ sudo pm2 startup redhat
 
 ## Monitoring
 
-### stdout/stderr from ISDP
+stdout/stderr from ISDP can be monitored at ~/.pm2/logs
 
-See ~/.pm2/logs 
+You can check the status of ISDP server at /health endpoint
+```
+curl http://localhost:12346/health
+```
+If this doesn't return, or return non-200, then something is wrong.
+
+You can also check the runtime information from pm2
+```
+pm2 show isdp
+```
 
 ## TODOs
 
