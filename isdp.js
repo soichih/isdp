@@ -16,6 +16,7 @@
 */
 
 var server = require('./server');
-server.start();
-console.log("waiting for incoming connections...");
+server.start(function() {
+    console.log("waiting for incoming connections...");
+});
 

@@ -2,8 +2,7 @@
 var fs = require('fs');
 var winston = require('winston');
 var winstonExpress = require('express-winston');
-
-require('winston-logstash');
+//require('winston-logstash');
 
 exports.isdp = {
     //directory where you want to download files from hsi and create tar balls
