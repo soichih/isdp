@@ -133,7 +133,7 @@ function handle_request(req) {
     });
 
     //step 4 
-    job.task('Publishing zip on download server src:'+job.stagezip, function(task, cb) {
+    job.task('Publishing zip on download server', function(task, cb) {
         fs.symlink(
             stagezip, //src
             publishzip, //dst

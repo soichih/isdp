@@ -26,12 +26,6 @@ if(config.express.jwt) app.use(require('express-jwt')(config.express.jwt));
 app.get('/health', function(req, res) { res.json({status: 'running'}); });
 app.post('/request', controllers.request);
 
-/*
-app.get('/test', function(req, res) {
-    throw new Error("test error");
-});
-*/
-
 //error handling
 app.use(expressWinston.errorLogger(config.logger.winston)); 
 app.use(function(err, req, res, next) {
@@ -49,11 +43,12 @@ process.on('uncaughtException', function (err) {
 })
 
 exports.app = app;
-exports.start = function() {
+exports.start = function(cb) {
     var port = process.env.PORT || config.express.port || '8080';
     var host = process.env.HOST || config.express.host || 'localhost';
     app.listen(port, host, function() {
         console.log("ISDP request handler listening on %s:%d in %s mode", host, port, app.settings.env);
+        if(cb) cb();
     });
 };
 
