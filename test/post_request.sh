@@ -9,6 +9,7 @@ curl -H "Accept: application/json" \
     -H "Content-type: application/json" \
     -X POST -d '
 {
+    "name": "Here is random name given by client",
     "notification_email": "hayashis@iu.edu", 
     "unzip": true,
     "files": [ 
@@ -22,6 +23,8 @@ curl -H "Accept: application/json" \
     ]
 }' \
     http://localhost:12346/request
+
+exit
 
 curl -H "Accept: application/json" \
     -H "Content-type: application/json" \

@@ -42,7 +42,7 @@ function handle_request(req) {
     //logger.info("handling user request");
     //logger.error("test error");
 
-    var job = new scadm.job({name: 'just another isdp job'});
+    var job = new scadm.job({name: (req.name?req.name:'ISDP Request at '+(new Date()).toString())});
 
     var stagezip = config.isdp.stagedir+'/'+job.id+'.zip';
     var publishzip = config.isdp.publishdir+'/'+job.id+'.zip';
