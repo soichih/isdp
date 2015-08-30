@@ -1,6 +1,6 @@
 {
   "name": "isdp",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "ISDP multi-file download service",
   "main": "isdp.js",
   "directories": {
@@ -31,7 +31,7 @@
     "async": "~1.4.2",
     "express-winston": "~0.3.1",
     "winston-logstash": "~0.2.11",
-    "sca-datamover": "~0.0.2",
+    "sca-datamover": "~0.0.3",
     "hpss": "0.0.3",
     "numeral": "~1.5.3"
   },

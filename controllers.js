@@ -39,78 +39,95 @@ hpss.init(config.hpss);
 var request_logger = new winston.Logger(config.logger.request);
 
 function handle_request(req) {
-    //logger.info("handling user request");
-    //logger.error("test error");
-
-    var job = new scadm.job({name: (req.name?req.name:'ISDP Request at '+(new Date()).toString())});
-
+    var job = new scadm.job({
+        name: (req.name?req.name:'ISDP Request at '+(new Date()).toString())
+    });
     var stagezip = config.isdp.stagedir+'/'+job.id+'.zip';
     var publishzip = config.isdp.publishdir+'/'+job.id+'.zip';
 
-    //step 1
-    job.task('Create a staging directory', function(task, cb) {
-        fs.mkdir(config.isdp.stagedir+'/'+job.id, cb);
-    });
-
-    //step 2a - for each files requested...
-    req.files.forEach(function(file) {
-        job.task('Download '+file+ ' from hsi', function(task, cb) {
-            logger.info("downloading "+file);
-            //get the requested file from hsi
-            hpss.hsi.get(file, config.isdp.stagedir+'/'+job.id, function(err, msgs) {
-                if(err) { 
-                    var msg = "Failed to download "+file+" from sda. hsi return code: "+err.code;
-                    if(msgs) msg += "\n"+msgs.join("\n"); //add details from hsi
-                    
-                    //send error message to user
-                    fs.appendFile(config.isdp.stagedir+'/'+job.id+'/isdp_errors.txt', msg+'\n');
-
-                    //also deliver it upstream (so that it can be logged on the server side)
-                    err.msg = msg;
-                    cb(err, true); //true means to continue after this error
-                } else {
-                    //all good
-                    cb();
-                }
-            }, function(progress) {
-                job.progress(progress, job.id+'.'+task.id); //post hsi generated progress
-            });
-        });
-    });
-
-    //step 2b - for each files downloaded.. unzip
-    req.files.forEach(function(file) {
-        var name = file.substring(file.lastIndexOf("/")+1);
-        //console.log("should I unzip "+name);
-        if(req.unzip && name.endsWith(".zip")) {
-            job.task('Unzipping '+name, function(task, cb) {
-                var dirname = name.substring(0, name.length-4); //create a directory name to unzip to.
-                //console.dir(process.env);
-                var p = spawn('unzip', [name, '-d', dirname], {cwd: config.isdp.stagedir+'/'+job.id});        
-                p.stderr.pipe(process.stderr);
-                p.stdout.pipe(process.stdout);
-                p.on('close', function(code, signal) {
-                    if(code == 0) { 
-                        logger.info("finished unzipping");
-                        fs.unlink(config.isdp.stagedir+'/'+job.id+'/'+name,function(err) {
-                            cb(err, true); //let process continue if unlink fails
-                        });
-                    }
-                    else cb({code:code, signal:signal}, true); //let process continues
-                });
-                p.on('error', function(err) {
-                    logger.error("unzipping failed");
-                    logger.error(err);
-                    logger.info("cd "+config.isdp.stagedir+'/'+job.id+"; unzip "+name+" -d "+dirname);
-                    //'close' will still fire - so no need to cb(err)
-                });
-            });
+    job.addTask({
+        name: 'Creating a staging directory', 
+        work: function(task, cb) {
+            fs.mkdir(config.isdp.stagedir+'/'+job.id, cb);
         }
     });
 
+    var download_job = job.addJob({
+        name: "Downloading requested files fom hsi"
+    });
+    req.files.forEach(function(file) {
+        download_job.addTask({
+            name: file,
+            work: function(task, cb) {
+                logger.info("downloading "+file);
+                //get the requested file from hsi
+                hpss.hsi.get(file, config.isdp.stagedir+'/'+job.id, function(err, msgs) {
+                    if(err) { 
+                        var msg = "Failed to download "+file+" from sda. hsi return code: "+err.code;
+                        if(msgs) msg += "\n"+msgs.join("\n"); //add details from hsi
+                        
+                        //send error message to user
+                        fs.appendFile(config.isdp.stagedir+'/'+job.id+'/isdp_errors.txt', msg+'\n');
+
+                        //also deliver it upstream (so that it can be logged on the server side)
+                        err.msg = msg;
+                        cb(err, true); //true means to continue after this error
+                    } else {
+                        //all good
+                        cb();
+                    }
+                }, task.progress);
+            }
+        });
+    });
+
+    if(req.unzip) {
+        var unzip_job = job.addJob({
+            name: "Unzipping zip files"
+        });
+        //step 2b - for each files downloaded.. unzip
+        req.files.forEach(function(file) {
+            var name = file.substring(file.lastIndexOf("/")+1);
+            //console.log("should I unzip "+name);
+            if(name.endsWith(".zip")) unzip_job.addTask({
+                name: name, 
+                work: function(task, cb) {
+                    var dirname = name.substring(0, name.length-4); //create a directory name to unzip to.
+                    //console.dir(process.env);
+                    var p = spawn('unzip', [name, '-d', dirname], {cwd: config.isdp.stagedir+'/'+job.id});        
+                    var out = "", err = "";
+                    //p.stderr.pipe(process.stderr);
+                    //p.stdout.pipe(process.stdout);
+                    p.stderr.on('data', function(chunk) {
+                        err += chunk;
+                    });
+                    p.stdout.on('data', function(chunk) {
+                        out += chunk;
+                    });
+                    if(out != "") logger.info(out);
+                    if(err != "") logger.error(err);
+                    p.on('close', function(code, signal) {
+                        if(code == 0) { 
+                            logger.info("finished unzipping");
+                            fs.unlink(config.isdp.stagedir+'/'+job.id+'/'+name,function(err) {
+                                cb(err, true); //let process continue even if unlink fails
+                            });
+                        } else cb({msg: out+"\n"+err, code:code, signal:signal}, true); //let process continues
+                    });
+                    p.on('error', function(err) {
+                        logger.error("unzipping failed");
+                        logger.error(err);
+                        logger.info("cd "+config.isdp.stagedir+'/'+job.id+"; unzip "+name+" -d "+dirname);
+                        //'close' will still fire - so no need to cb(err)
+                    });
+                }
+            });
+        });
+    }
+
     //step 3
     /*
-    job.task('Creating tar ball', function(task, cb) {
+    job.addTask({name: 'Creating tar ball', work: function(task, cb) {
         job.stagetar = config.isdp.stagedir+'/'+job.id+'.tar';
         scadm.tasks.tarfiles({
             path: job.id,
@@ -118,27 +135,43 @@ function handle_request(req) {
             cwd: config.isdp.stagedir,
             gzip: false
         }, cb);
+    }});
+    */
+
+    /*
+    job.addTask({
+        name: 'Neverending job',
+        work: function(task, cb) {
+            var p = 0.1;
+            setInterval(function() {
+                p+=0.01;
+                task.progress({progress: p, msg: p});
+            }, 1000);
+        }
     });
     */
 
-    job.task('Creating a zip', function(task, cb) {
-        scadm.tasks.zipfiles({
-            path: job.id,
-            dest: stagezip,
-            cwd: config.isdp.stagedir,
-            on_progress: function(msg) {
-                job.progress({msg: msg}, job.id+'.'+task.id); 
-            }
-        }, cb);
+    job.addTask({
+        name: 'Creating a zip', 
+        work: function(task, cb) {
+            scadm.tasks.zipfiles({
+                path: job.id,
+                dest: stagezip,
+                cwd: config.isdp.stagedir,
+                on_progress: function(msg) {
+                    task.progress({msg: msg});
+                }
+            }, cb);
+        }
     });
 
-    //step 4 
-    job.task('Publishing zip on download server', function(task, cb) {
-        fs.symlink(
-            stagezip, //src
-            publishzip, //dst
-            cb);
+    job.addTask({
+        name: 'Publishing zip on download server', 
+        work: function(task, cb) {
+            fs.symlink(stagezip, publishzip, cb);
+        }
     });
+
 
     //respond to the caller with job id
 
@@ -175,16 +208,9 @@ function handle_request(req) {
 }
 
 exports.request = function(req, res) {
-    try {
-        request_logger.info({headers: req.headers, body: req.body});
-
-        //TODO validate req.body?
-        var job = handle_request(req.body);
-        res.json({status: 'requested', id: job.id});
-
-    } catch (ex) {
-        console.log("unhandled exception");
-        console.dir(ex);
-    }
+    request_logger.info({headers: req.headers, body: req.body});
+    //TODO validate req.body?
+    var job = handle_request(req.body);
+    res.json({status: 'requested', id: job.id});
 }
 
