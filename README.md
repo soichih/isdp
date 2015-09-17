@@ -12,6 +12,20 @@ cd isdp
 npm install
 ```
 
+## Upgrade
+
+First, update the latest ISDP service 
+
+```
+git pull
+```
+
+Then update ISDP dependencies..
+
+```
+npm update
+```
+
 ## Configuring
 
 Copy ./config/config_sample.js to ./config/config.js 
