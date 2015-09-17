@@ -108,7 +108,7 @@ function handle_request(req) {
                     if(err != "") logger.error(err);
                     p.on('close', function(code, signal) {
                         if(code == 0) { 
-                            logger.info("finished unzipping");
+                            logger.info("finished unzipping "+name);
                             fs.unlink(config.isdp.stagedir+'/'+job.id+'/'+name,function(err) {
                                 cb(err, true); //let process continue even if unlink fails
                             });
@@ -181,7 +181,6 @@ function handle_request(req) {
         if(req.notification_email) {
             logger.info("sending notification to "+req.notification_email);
             fs.stat(stagezip, function(err, stats) {
-                //console.log(JSON.stringify(job.status, null, 4));
                 if(err) return err;
                 var html_template = fs.readFileSync('./t/html_notification.ejs').toString();
                 var text_template = fs.readFileSync('./t/text_notification.ejs').toString();

@@ -9,7 +9,7 @@ curl -H "Accept: application/json" \
     -H "Content-type: application/json" \
     -X POST -d '
 {
-    "name": "Here is random name given by client",
+    "name": "Test request 1 for IDSP dev instance",
     "notification_email": "hayashis@iu.edu", 
     "unzip": true,
     "files": [ 
@@ -31,6 +31,7 @@ curl -H "Accept: application/json" \
     -H "Authorization: Bearer $token" \
     -X POST -d '
 {
+    "name": "Test request 2 for IDSP dev instance",
     "notification_email": "hayashis@iu.edu", 
     "files": [ 
         "intopo/historic/geopdf/24k/in_aberdeen_156636_1965_24000_geo.zip",

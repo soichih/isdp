@@ -1,18 +1,17 @@
 <html>
 <body>
 <div class="container">
-    <h2>Notification</h2>
-    <div class="well">
+    <h2>ISDP Download Service</h2>
+    <div>
         <p>The tar ball you have requested is ready to be downloaded (jobid: <%= jobid %>)</p>
         <a class="btn btn-primary" href="<%= download_url%>">Download (<b><%= size%></b> MB)</a>
     </div>
     
-    <!-- TODO show main status?-->
-
+    <h3>Status Detail</h3>
     <table style="border-collapse: collapse;" width="100%">
     <% for(var taskid in status.tasks) { %>
     <tr>
-        <td style="align: top; border-bottom: 1px solid #ccc;" width="50">
+        <td style="vertical-align: top; border-bottom: 1px solid #ccc; padding-top: 15px;" width="50">
             <% if(status.tasks[taskid].status == 'finished') {%>
                 <img src="http://soichi7.ppa.iu.edu/public/cdn/check.png"/>
             <% } else if(status.tasks[taskid].status == 'failed') { %>
@@ -24,11 +23,28 @@
         <td style="border-bottom: 1px solid #ccc;">
             <p><%= status.tasks[taskid].name %></p>
             <p style="color: #999;"><%= status.tasks[taskid].msg %></p>
+            <ul style="list-style: none; padding-left: 0px;">
+                <% for(var subtaskid in status.tasks[taskid].tasks) { 
+                    var subtask = status.tasks[taskid].tasks[subtaskid]; 
+                %>
+                    <li style="font-family: monospace">
+                    <% if(subtask.status == 'finished') {%>
+                        <img src="http://soichi7.ppa.iu.edu/public/cdn/check.png" width="10px"/>
+                    <% } else { %>
+                        <img src="http://soichi7.ppa.iu.edu/public/cdn/cross.png" width="10px"/>
+                    <% } %>
+                    &nbsp;
+                    <%= subtask.name%>
+                    <% if(subtask.status != 'finished') {%>
+                        <pre style="color: red"><%= subtask.msg %></pre>
+                    <% } %>
+                    </li>
+                <% } %>
+            </ul>
         </td>
     </tr>
     <% } %>
     </table>
-    <p class="text-muted">Some footer content here</p>
 </div>
 </body>
 </html>
