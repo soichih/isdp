@@ -24,8 +24,6 @@ curl -H "Accept: application/json" \
 }' \
     http://localhost:12346/request
 
-exit
-
 curl -H "Accept: application/json" \
     -H "Content-type: application/json" \
     -H "Authorization: Bearer $token" \

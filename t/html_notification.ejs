@@ -13,34 +13,34 @@
     <tr>
         <td style="vertical-align: top; border-bottom: 1px solid #ccc; padding-top: 15px;" width="50">
             <% if(status.tasks[taskid].status == 'finished') {%>
-                <img src="http://soichi7.ppa.iu.edu/public/cdn/check.png"/>
+                <span style="color:green;font-size: 150%;">✔</span>
             <% } else if(status.tasks[taskid].status == 'failed') { %>
-                <img src="http://soichi7.ppa.iu.edu/public/cdn/cross.png"/>
+                <span style="color:red;font-size: 150%;">✗</span>
             <% } else { %>
                 <b><%=status.tasks[taskid].status%></b>
             <% } %>
         </td>
         <td style="border-bottom: 1px solid #ccc;">
             <p><%= status.tasks[taskid].name %></p>
-            <p style="color: #999;"><%= status.tasks[taskid].msg %></p>
-            <ul style="list-style: none; padding-left: 0px;">
+            <p style="color: #777;"><%= status.tasks[taskid].msg %></p>
+            <div style="padding-left: 10px; font-size: 90%">
                 <% for(var subtaskid in status.tasks[taskid].tasks) { 
                     var subtask = status.tasks[taskid].tasks[subtaskid]; 
                 %>
-                    <li style="font-family: monospace">
                     <% if(subtask.status == 'finished') {%>
-                        <img src="http://soichi7.ppa.iu.edu/public/cdn/check.png" width="10px"/>
+                        <p style="color:green">✔
                     <% } else { %>
-                        <img src="http://soichi7.ppa.iu.edu/public/cdn/cross.png" width="10px"/>
+                        <p style="color:red">✗
                     <% } %>
                     &nbsp;
                     <%= subtask.name%>
+                    </p>
                     <% if(subtask.status != 'finished') {%>
                         <pre style="color: red"><%= subtask.msg %></pre>
                     <% } %>
                     </li>
                 <% } %>
-            </ul>
+            </div>
         </td>
     </tr>
     <% } %>

@@ -6,9 +6,9 @@ var spawn = require('child_process').spawn;
 //contrib
 var hpss = require('hpss');
 var ejs = require('ejs');
-var Email = require('email').Email;
 var numeral = require('numeral');
 var winston = require('winston');
+var nodemailer = require('nodemailer');
 
 //mine
 var config = require('./config/config');
@@ -191,6 +191,7 @@ function handle_request(req) {
                     status: job.status,
                 }
 
+                /*
                 var email = new Email({ 
                     from: config.isdp.notification_from,
                     to: req.notification_email,
@@ -200,6 +201,20 @@ function handle_request(req) {
                     bodyType: 'html'
                 });
                 email.send();
+                */
+                var transporter = nodemailer.createTransport(); //use direct mx transport
+                transporter.sendMail({
+                    from: config.isdp.notification_from,
+                    to: req.notification_email,
+                    subject: "Your zip file is ready to be downloaded",
+                    html:  ejs.render(html_template, params),
+                    text: ejs.render(text_template, params),
+                }, function(err, info) {
+                    if(err) {
+                        console.dir(err);
+                    }
+                    if(info && info.response) logger.info("notification sent: "+info.response);
+                });
             });
         }
     });
