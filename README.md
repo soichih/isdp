@@ -49,6 +49,7 @@ pm2 start isdp.js
 
 To auto-start pm2 (and isdp app) during the next reboot,
 ```
+pm2 save
 sudo pm2 startup redhat 
 ```
 * Use "systemd" instead of redhat if you are installing on systemd enabled host.
