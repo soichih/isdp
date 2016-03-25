@@ -29,7 +29,7 @@
     "hpss": "0.0.3",
     "nodemailer": "~1.5.0",
     "numeral": "~1.5.3",
-    "sca-datamover": "~0.0.7",
+    "sca-datamover": "~0.0.8",
     "winston": "~1.0.1",
     "winston-logstash": "~0.2.11"
   },

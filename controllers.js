@@ -96,14 +96,13 @@ function handle_request(req) {
             name: "Unzipping zip files"
         });
         //step 2b - for each files downloaded.. unzip
-        req.files.forEach(function(file) {
-            var name = file.substring(file.lastIndexOf("/")+1);
+        req.files.forEach(function(file, idx) {
+            var name = idx+"."+file.substring(file.lastIndexOf("/")+1);
             //console.log("should I unzip "+name);
             if(name.endsWith(".zip")) unzip_job.addTask({
                 name: name, 
                 work: function(task, cb) {
                     var dirname = name.substring(0, name.length-4); //create a directory name to unzip to.
-                    //console.dir(process.env);
                     var p = spawn('unzip', [name, '-d', dirname], {cwd: config.isdp.stagedir+'/'+job.id});        
                     var out = "", err = "";
                     p.stderr.on('data', function(chunk) {
