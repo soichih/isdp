@@ -21,7 +21,10 @@ curl -H "Accept: application/json" \
         "intopo/historic/geopdf/250k/_noexist.zip",
         "/hpss/h/a/hayashis/iso/ubuntu-14.04-server-amd64.iso"
     ]
-}' \
-    http://localhost:12346/request
+}' http://localhost:12346/request > request.json
+id=`node parse_id`
 
+curl -H "Accept: application/json" \
+    -H "Content-type: application/json" \
+    -X DELETE http://localhost:12346/$id
 

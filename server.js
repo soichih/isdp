@@ -22,17 +22,19 @@ app.use(expressWinston.logger(config.logger.winston));
 //jwt auth is optional
 if(config.express.jwt) app.use(require('express-jwt')(config.express.jwt));
 
-//setup routes
-app.get('/health', function(req, res) { res.json({status: 'running'}); });
-app.post('/request', controllers.request);
+app.use('/', require('./controllers'));
 
 //error handling
 app.use(expressWinston.errorLogger(config.logger.winston)); 
 app.use(function(err, req, res, next) {
+    if(typeof err == "string") err = {message: err};
     logger.error(err);
-    logger.error(err.stack);
+    if(err.stack) {
+        logger.error(err.stack);
+        err.stack = "hidden"; //for ui
+    }
     res.status(err.status || 500);
-    res.json({message: err.message, /*stack: err.stack*/}); //let's hide callstack for now
+    res.json(err);
 });
 
 process.on('uncaughtException', function (err) {

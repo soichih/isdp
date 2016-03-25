@@ -8,4 +8,6 @@
 
 #nodemon isdp
 
-pm2 start isdp.js --watch --ignore-watch="\.log$"
+pm2 delete isdp
+pm2 start isdp.js --watch --ignore-watch="\.log \.git test"
+pm2 save

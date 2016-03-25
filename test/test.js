@@ -6,17 +6,7 @@ var request = require('supertest');
 
 var config = require('../config/config');
 
-/*
-describe("config", function() {
-    describe("directories", function() {
-        it("stagedir should be writable", function(done) {
-        });
-    });
-});
-*/
-
 describe("routing", function() {
-    var url = 'http://someurl.com';
     var app = require('../server').app;
 
     before(function(done) {
@@ -30,26 +20,17 @@ describe("routing", function() {
             .expect(404, done);
         });
 
-        /* I am not sure if I am testing what I think I am testing..
-        it("error check", function(done) {
-            app.get('/errortest', function(req, res) {
-                throw new Error("test error");
-            });
-            request(app).get('/errortest')
-            .expect(500)
-            .end(done) 
-        });
-        */
-
         it("should return ok status", function(done) {
             request(app).get('/health')
-            .expect(200, {status: 'running'})
+            .expect(200, {status: 'ok'})
             .end(done) 
         });
     });
 
+    var reqid = null;
+
     describe("request", function() {
-        this.timeout(30*1000);
+        //this.timeout(30*1000);
         it("should let me post request", function(done) {
             var req = {
                 notification_email: "hayashis@iu.edu",
@@ -62,16 +43,25 @@ describe("routing", function() {
                 ]
             };
 
-            app.post('/request-test', require('../controllers').request);
+            //app.post('/request', require('../controllers').request);
 
-            request(app).post('/request-test')
+            request(app).post('/request')
             //.set('Accept', 'application/json')
             //.set('Authorization', 'Bearer '+config.test.jwt)
             .send(req)
             .expect(200, function(err, res) {
                 console.dir(res.body);
-                setTimeout(done, 15*1000);
+                assert(res.body.id); //id should be set
+                reqid = res.body.id;
+                done();
+                //setTimeout(done, 15*1000);
             });
+        });
+    });
+
+    describe("progress", function() {
+        it("should tell me progress tatus", function(done) {
+            done();
         });
     });
 });

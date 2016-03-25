@@ -1,7 +1,9 @@
+'use strict';
 
 //node
 var fs = require('fs');
 var spawn = require('child_process').spawn;
+var path = require('path');
 
 //contrib
 var hpss = require('hpss');
@@ -9,41 +11,49 @@ var ejs = require('ejs');
 var numeral = require('numeral');
 var winston = require('winston');
 var nodemailer = require('nodemailer');
+var express = require('express');
+var router = express.Router();
+//var rmdir = require('rimraf');
 
 //mine
 var config = require('./config/config');
-var scadm = require('sca-datamover');//.init(config.scadm);
-
-//ES6 polyfill
-if (!String.prototype.endsWith) {
-  String.prototype.endsWith = function(searchString, position) {
-      var subjectString = this.toString();
-      if (position === undefined || position > subjectString.length) {
-        position = subjectString.length;
-      }
-      position -= searchString.length;
-      var lastIndex = subjectString.indexOf(searchString, position);
-      return lastIndex !== -1 && lastIndex === position;
-  };
-}
+var scadm = require('sca-datamover');
 
 var app = require('./server').app;
 var logger = new winston.Logger(config.logger.winston);
 
-//initialize sca datamover
+//ES6 polyfill
+if (!String.prototype.endsWith) {
+    logger.debug("ES6 polyfilling String.endsWith");
+    String.prototype.endsWith = function(searchString, position) {
+        var subjectString = this.toString();
+        if (position === undefined || position > subjectString.length) {
+            position = subjectString.length;
+        }
+        position -= searchString.length;
+        var lastIndex = subjectString.indexOf(searchString, position);
+        return lastIndex !== -1 && lastIndex === position;
+    };
+}
+
+//init
 scadm.init({logger: logger, progress: config.progress});
-//initialize hpss wrapper
 hpss.init(config.hpss);
 
 //logger to use to store all requests
 var request_logger = new winston.Logger(config.logger.request);
 
+var running_jobs = {};
+
 function handle_request(req) {
     var job = new scadm.job({
         name: (req.name?req.name:'ISDP Request at '+(new Date()).toString())
     });
+    running_jobs[job.id] = job;
+
     var stagezip = config.isdp.stagedir+'/'+job.id+'.zip';
     var publishzip = config.isdp.publishdir+'/'+job.id+'.zip';
+
 
     job.addTask({
         name: 'Creating a staging directory', 
@@ -73,6 +83,9 @@ function handle_request(req) {
                         err.msg = msg;
                         cb(err, true); //true means to continue after this error
                     } else {
+                        //rename the file so that file name won't collide
+                        var base = path.basename(file); 
+                        
                         //all good
                         cb();
                     }
@@ -96,8 +109,6 @@ function handle_request(req) {
                     //console.dir(process.env);
                     var p = spawn('unzip', [name, '-d', dirname], {cwd: config.isdp.stagedir+'/'+job.id});        
                     var out = "", err = "";
-                    //p.stderr.pipe(process.stderr);
-                    //p.stdout.pipe(process.stdout);
                     p.stderr.on('data', function(chunk) {
                         err += chunk;
                     });
@@ -125,32 +136,6 @@ function handle_request(req) {
         });
     }
 
-    //step 3
-    /*
-    job.addTask({name: 'Creating tar ball', work: function(task, cb) {
-        job.stagetar = config.isdp.stagedir+'/'+job.id+'.tar';
-        scadm.tasks.tarfiles({
-            path: job.id,
-            dest: job.stagetar,
-            cwd: config.isdp.stagedir,
-            gzip: false
-        }, cb);
-    }});
-    */
-
-    /*
-    job.addTask({
-        name: 'Neverending job',
-        work: function(task, cb) {
-            var p = 0.1;
-            setInterval(function() {
-                p+=0.01;
-                task.progress({progress: p, msg: p});
-            }, 1000);
-        }
-    });
-    */
-
     job.addTask({
         name: 'Creating a zip', 
         work: function(task, cb) {
@@ -172,11 +157,11 @@ function handle_request(req) {
         }
     });
 
-
-    //respond to the caller with job id
-
     //finally, start the job
     job.run(function() {
+        //done!
+        delete running_jobs[job.id];
+        
         //after it's done, send a notification 
         if(req.notification_email) {
             logger.info("sending notification to "+req.notification_email);
@@ -191,17 +176,6 @@ function handle_request(req) {
                     status: job.status,
                 }
 
-                /*
-                var email = new Email({ 
-                    from: config.isdp.notification_from,
-                    to: req.notification_email,
-                    subject: "Your zip file is ready to be downloaded",
-                    body:  ejs.render(html_template, params),
-                    altText: ejs.render(text_template, params),
-                    bodyType: 'html'
-                });
-                email.send();
-                */
                 var transporter = nodemailer.createTransport(); //use direct mx transport
                 transporter.sendMail({
                     from: config.isdp.notification_from,
@@ -221,10 +195,43 @@ function handle_request(req) {
     return job;
 }
 
-exports.request = function(req, res) {
+router.get('/health', function(req, res) { res.json({status: 'ok'}); });
+
+router.post('/request', function(req, res, next) {
     request_logger.info({headers: req.headers, body: req.body});
     //TODO validate req.body?
     var job = handle_request(req.body);
-    res.json({status: 'requested', id: job.id});
-}
+    res.json({status: 'requested', id: job.id}); //progress key should be _isdp.<job.id>
+});
 
+//this deletes job - with no acl (as long as the stage dir exists)
+router.delete('/:id', function(req, res, next) {
+    var id = req.params.id;
+    if(/[^a-z0-9-]/.test(id)) return next('invalid char in request id');
+    
+    //logger.debug("deleting job:"+id);
+    
+    //request stop if the job is still running
+    if(running_jobs[id]) running_jobs[id].stop();
+
+    //now delete stuff
+    fs.unlinkSync(config.isdp.stagedir+'/'+id+".zip");
+    fs.unlinkSync(config.isdp.publishdir+'/'+id+'.zip');
+
+    //also remove the workdir
+    /*
+    try {
+        if(fs.statSync(path).isDirectory()) {
+            logger.debug("proceeding with rimraf on"+path);
+            rmdir(path, function(err){
+                if(err) return next(err);
+            });
+        }
+    } catch(e) {
+        //working dir doesn't exist.. all good
+    }
+    */
+    res.json({status: 'removed '+id}); 
+});
+
+module.exports = router;
