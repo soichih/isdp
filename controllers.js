@@ -54,7 +54,6 @@ function handle_request(req) {
     var stagezip = config.isdp.stagedir+'/'+job.id+'.zip';
     var publishzip = config.isdp.publishdir+'/'+job.id+'.zip';
 
-
     job.addTask({
         name: 'Creating a staging directory', 
         work: function(task, cb) {
@@ -65,7 +64,7 @@ function handle_request(req) {
     var download_job = job.addJob({
         name: "Downloading requested files fom hsi"
     });
-    req.files.forEach(function(file) {
+    req.files.forEach(function(file, idx) {
         download_job.addTask({
             name: file,
             work: function(task, cb) {
@@ -85,9 +84,7 @@ function handle_request(req) {
                     } else {
                         //rename the file so that file name won't collide
                         var base = path.basename(file); 
-                        
-                        //all good
-                        cb();
+                        fs.rename(config.isdp.stagedir+'/'+job.id+'/'+base, config.isdp.stagedir+'/'+job.id+'/'+idx+'.'+base, cb);
                     }
                 }, task.progress);
             }
@@ -215,7 +212,7 @@ router.delete('/:id', function(req, res, next) {
     if(running_jobs[id]) running_jobs[id].stop();
 
     //now delete stuff
-    fs.unlinkSync(config.isdp.stagedir+'/'+id+".zip");
+    fs.unlinkSync(config.isdp.stagedir+'/'+id+'.zip');
     fs.unlinkSync(config.isdp.publishdir+'/'+id+'.zip');
 
     //also remove the workdir

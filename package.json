@@ -1,6 +1,6 @@
 {
   "name": "isdp",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "ISDP multi-file download service",
   "main": "isdp.js",
   "directories": {
