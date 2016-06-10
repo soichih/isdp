@@ -55,6 +55,15 @@ sudo pm2 startup redhat
 * Use "systemd" instead of redhat if you are installing on systemd enabled host.
 * If you don't want to run the app as root, specify the user ID you want to run pm2 under (like -u hayashis)
 
+pm2 log could fill up your disk quickly (stored in /root/.pm2/logs). You should probably install pm2-logrotate.
+
+```
+pm2 install pm2-logrotate
+```
+
+Please see https://www.npmjs.com/package/pm2-logrotate for more options.
+
+
 ## Monitoring
 
 pm2 stores stdout/stderr from ISDP to ~/.pm2/logs . you can monitor it by
@@ -72,7 +81,6 @@ You can also check the runtime information from pm2
 ```
 pm2 show isdp
 ```
-
 
 ## TODOs
 

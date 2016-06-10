@@ -4,5 +4,6 @@
 
 curl -H "Accept: application/json" \
     -H "Content-type: application/json" \
-    -X DELETE http://localhost:12346/9f7d80bc-80f2-4d31-9dbd-8d58bc7bc8c3
+    -X DELETE \
+    http://localhost:12346/9f7d80bc-80f2-4d31-9dbd-8d58bc7bc8c3
 
