@@ -16,7 +16,7 @@ var controllers = require('./controllers');
 
 //init express app
 var app = express();
-app.use(bodyParser.json()); 
+app.use(bodyParser.json({limit: '5mb'})); 
 app.use(expressWinston.logger(config.logger.winston));
 
 //jwt auth is optional
